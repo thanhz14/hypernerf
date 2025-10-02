@@ -1,4 +1,5 @@
 # HyperNeRF: A Higher-Dimensional Representation for Topologically Varying Neural Radiance Fields
+hello im thanh
 
 This is the code for "HyperNeRF: A Higher-Dimensional Representation for Topologically Varying Neural Radiance Fields".
 
