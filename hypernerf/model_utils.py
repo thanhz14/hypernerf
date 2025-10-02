@@ -16,7 +16,10 @@
 from typing import Optional
 
 from flax import linen as nn
-from flax import optim
+# from flax import optim
+import optax
+from flax.training import train_state
+
 from flax import struct
 from jax import lax
 from jax import random
@@ -24,13 +27,13 @@ import jax.numpy as jnp
 
 
 @struct.dataclass
-class TrainState:
-  """Stores training state, including the optimizer and model params."""
-  optimizer: optim.Optimizer
+class TrainState(train_state.TrainState):
+  extra_params: Optional[dict] = None
   nerf_alpha: Optional[jnp.ndarray] = None
   warp_alpha: Optional[jnp.ndarray] = None
   hyper_alpha: Optional[jnp.ndarray] = None
   hyper_sheet_alpha: Optional[jnp.ndarray] = None
+
 
   @property
   def extra_params(self):
