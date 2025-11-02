@@ -122,6 +122,8 @@ def render_image(
     # MỚI:
     
     rng, key_0, key_1 = jax.random.split(rng, 3)
+    key_0 = jax_utils.replicate(key_0, device_count)
+    key_1 = jax_utils.replicate(key_1, device_count)
     model_out = model_fn(
         key_0, key_1, 
         state.params['model'],  # ← Thay từ state.optimizer.target
