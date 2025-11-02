@@ -114,8 +114,21 @@ def render_image(
         lambda x: x[(proc_id * per_proc_rays):((proc_id + 1) * per_proc_rays)],
         chunk_rays_dict)
     chunk_rays_dict = utils.shard(chunk_rays_dict, device_count)
-    model_out = model_fn(key_0, key_1, state.optimizer.target['model'],
-                         chunk_rays_dict, state.extra_params)
+        # ===== FIX: Thay optimizer.target bằng params =====
+    # CŨ:
+    # model_out = model_fn(key_0, key_1, state.optimizer.target['model'],
+    #                      chunk_rays_dict, state.extra_params)
+    
+    # MỚI:
+    import random
+    rng, key_0, key_1 = random.split(rng, 3)
+    model_out = model_fn(
+        key_0, key_1, 
+        state.params['model'],  # ← Thay từ state.optimizer.target
+        chunk_rays_dict, 
+        state.extra_params()     # ← Call method
+    )
+    # ===== END FIX =====
     if not default_ret_key:
       ret_key = 'fine' if 'fine' in model_out else 'coarse'
     else:
