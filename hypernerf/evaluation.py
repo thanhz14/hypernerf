@@ -120,8 +120,8 @@ def render_image(
     #                      chunk_rays_dict, state.extra_params)
     
     # MỚI:
-    import random
-    rng, key_0, key_1 = random.split(rng, 3)
+    
+    rng, key_0, key_1 = jax.random.split(rng, 3)
     model_out = model_fn(
         key_0, key_1, 
         state.params['model'],  # ← Thay từ state.optimizer.target
