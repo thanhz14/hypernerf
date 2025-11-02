@@ -48,7 +48,8 @@ class ScalarParams:
 def save_checkpoint(path, state, keep=2):
   """Save the state to a checkpoint."""
   state_to_save = jax.device_get(jax.tree_util.tree_map(lambda x: x[0], state))
-  step = state_to_save.optimizer.state.step
+  step = state_to_save.step
+
   checkpoint_path = checkpoints.save_checkpoint(
       path, state_to_save, step, keep=keep)
   logging.info('Saved checkpoint: step=%d, path=%s', int(step), checkpoint_path)
