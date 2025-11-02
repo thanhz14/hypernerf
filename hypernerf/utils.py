@@ -286,12 +286,12 @@ def shard(xs, device_count=None):
   """Split data into shards for multiple devices along the first dimension."""
   if device_count is None:
     device_count = jax.local_device_count()
-  return jax.tree_map(lambda x: x.reshape((device_count, -1) + x.shape[1:]), xs)
+  return jax.tree_util.tree_map(lambda x: x.reshape((device_count, -1) + x.shape[1:]), xs)
 
 
 def to_device(xs):
   """Transfer data to devices (GPU/TPU)."""
-  return jax.tree_map(jnp.array, xs)
+  return jax.tree_util.tree_map(jnp.array, xs)
 
 
 def unshard(x, padding=0):
@@ -321,7 +321,7 @@ def parallel_map(f, iterable, max_threads=None, show_pbar=False, **kwargs):
 
 
 def parallel_tree_map(f, tree, **kwargs):
-  """Parallel version of jax.tree_map."""
+  """Parallel version of jax.tree_util.tree_map."""
   leaves, treedef = jax.tree_flatten(tree)
   results = parallel_map(f, leaves, **kwargs)
   return jax.tree_unflatten(treedef, results)
@@ -337,7 +337,7 @@ def strided_subset(sequence, count):
 
 def tree_collate(list_of_pytrees):
   """Collates a list of pytrees with the same structure."""
-  return tree_util.tree_multimap(lambda *x: np.stack(x), *list_of_pytrees)
+  return tree_util.tree_map(lambda *x: np.stack(x), *list_of_pytrees)
 
 
 @contextlib.contextmanager

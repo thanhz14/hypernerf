@@ -118,7 +118,7 @@ def prepare_data(xs):
     # (local_devices, device_batch_size, height, width, 3)
     return x.reshape((local_device_count, -1) + x.shape[1:])
 
-  return jax.tree_map(_prepare, xs)
+  return jax.tree_util.tree_map(_prepare, xs)
 
 
 def prepare_tf_data(xs, devices=None):
@@ -134,14 +134,14 @@ def prepare_tf_data(xs, devices=None):
     # (local_devices, device_batch_size, height, width, 3)
     return x.reshape((len(devices), -1) + x.shape[1:])
 
-  return jax.tree_map(_prepare, xs)
+  return jax.tree_util.tree_map(_prepare, xs)
 
 
 def prepare_tf_data_unbatched(xs):
   """Prepare TF dataset into unbatched numpy arrays."""
   # Use _numpy() for zero-copy conversion between TF and NumPy.
   # pylint: disable=protected-access
-  return jax.tree_map(lambda x: x._numpy(), xs)
+  return jax.tree_util.tree_map(lambda x: x._numpy(), xs)
 
 
 def iterator_from_dataset(dataset: tf.data.Dataset,
@@ -199,7 +199,7 @@ def _camera_to_rays_fn(item, use_tf_camera=False):
 def _tf_broadcast_metadata_fn(item):
   """Broadcasts metadata to the ray shape."""
   shape = tf.shape(item['rgb'])
-  item['metadata'] = jax.tree_map(
+  item['metadata'] = jax.tree_util.tree_map(
       lambda x: tf.broadcast_to(x, (shape[0], shape[1], x.shape[-1])),
       item['metadata'])
   return item
@@ -469,7 +469,7 @@ class DataSource(abc.ABC):
 
     out_dict = {}
     for key, value in data_dict.items():
-      out_dict[key] = jax.tree_map(_prepare_array, value)
+      out_dict[key] = jax.tree_util.tree_map(_prepare_array, value)
 
     return tf.data.Dataset.from_tensor_slices(out_dict)
 

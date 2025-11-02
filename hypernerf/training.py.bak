@@ -55,7 +55,7 @@ def save_checkpoint(path, state, keep=2):
   return checkpoint_path
 
 
-def zero_adam_param_states(state, selector: str):
+def zero_adam_param_states(state: flax.optim.OptimizerState, selector: str):
   """Applies a gradient for a set of parameters.
 
   Args:
@@ -73,13 +73,13 @@ def zero_adam_param_states(state, selector: str):
     if k.startswith(selector):
       v = flat_params[k]
       # pylint: disable=protected-access
-      flat_params[k] = adam._AdamParamState(
+      flat_params[k] = flax.optim.adam._AdamParamState(
           jnp.zeros_like(v.grad_ema), jnp.zeros_like(v.grad_sq_ema))
 
   new_param_states = traverse_util.unflatten_dict(
       {tuple(k.split('/')): v for k, v in flat_params.items()})
   new_param_states = dict(flax.core.freeze(new_param_states))
-  new_state = OptimizerState(step, new_param_states)
+  new_state = flax.optim.OptimizerState(step, new_param_states)
   return new_state
 
 
@@ -299,7 +299,7 @@ def train_step(model: models.NerfModel,
   def _loss_fn(params):
     ret = model.apply({'params': params['model']},
                       batch,
-                      extra_params=state.extra_params(),  # ← CHANGED: Call method
+                      extra_params=state.extra_params,
                       return_points=(use_warp_reg_loss or use_hyper_reg_loss),
                       return_weights=(use_warp_reg_loss or use_elastic_loss),
                       return_warp_jacobian=use_elastic_loss,
@@ -334,39 +334,19 @@ def train_step(model: models.NerfModel,
 
     return sum(losses.values()), (stats, ret)
 
-  # ===== THAY ĐỔI: Dùng params thay vì optimizer =====
-  params = state.params
-  
-  # Handle disable_hyper_grads using gradient masking
+  optimizer = state.optimizer
   if disable_hyper_grads:
-    # Create a mask function that zeros out hyper gradients
-    def mask_hyper_grads(grads):
-      # Zero out gradients for hyper_sheet_mlp parameters
-      if 'model' in grads and 'hyper_sheet_mlp' in grads['model']:
-        grads = dict(grads)
-        grads['model'] = dict(grads['model'])
-        grads['model']['hyper_sheet_mlp'] = jax.tree_map(
-            lambda x: jnp.zeros_like(x), grads['model']['hyper_sheet_mlp'])
-      return grads
-  else:
-    mask_hyper_grads = lambda x: x  # Identity function
+    optimizer = optimizer.replace(
+        state=zero_adam_param_states(optimizer.state, 'model/hyper_sheet_mlp'))
 
-  # ===== THAY ĐỔI: Compute gradients trên params =====
   grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
-  (_, (stats, model_out)), grad = grad_fn(params)
-  
-  # Apply hyper gradient masking if needed
-  grad = mask_hyper_grads(grad)
-  
+  (_, (stats, model_out)), grad = grad_fn(optimizer.target)
   grad = jax.lax.pmean(grad, axis_name='batch')
-  
   if grad_max_val > 0.0 or grad_max_norm > 0.0:
     grad = utils.clip_gradients(grad, grad_max_val, grad_max_norm)
-  
   stats = jax.lax.pmean(stats, axis_name='batch')
   model_out = jax.lax.pmean(model_out, axis_name='batch')
-  
-  # ===== THAY ĐỔI: Apply gradients với Optax API =====
-  new_state = state.apply_gradients(grads=grad)
-  
+  new_optimizer = optimizer.apply_gradient(
+      grad, learning_rate=scalar_params.learning_rate)
+  new_state = state.replace(optimizer=new_optimizer)
   return new_state, stats, rng_key, model_out
