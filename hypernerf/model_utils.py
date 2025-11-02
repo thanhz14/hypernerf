@@ -16,7 +16,8 @@
 from typing import Optional
 
 from flax import linen as nn
-from flax import optim
+import optax
+from flax.training import train_state
 from flax import struct
 from jax import lax
 from jax import random
@@ -24,16 +25,15 @@ import jax.numpy as jnp
 
 
 @struct.dataclass
-class TrainState:
-  """Stores training state, including the optimizer and model params."""
-  optimizer: optim.Optimizer
+class TrainState(train_state.TrainState):
+  """Custom TrainState for HyperNeRF với các alpha parameters."""
   nerf_alpha: Optional[jnp.ndarray] = None
   warp_alpha: Optional[jnp.ndarray] = None
   hyper_alpha: Optional[jnp.ndarray] = None
   hyper_sheet_alpha: Optional[jnp.ndarray] = None
 
-  @property
   def extra_params(self):
+    """Returns dict of extra parameters for model."""
     return {
         'nerf_alpha': self.nerf_alpha,
         'warp_alpha': self.warp_alpha,
@@ -111,7 +111,7 @@ def volumetric_rendering(rgb,
   last_sample_z = 1e10 if sample_at_infinity else 1e-19
   dists = jnp.concatenate([
       z_vals[..., 1:] - z_vals[..., :-1],
-      jnp.broadcast_to([last_sample_z], z_vals[..., :1].shape)
+      jnp.full(z_vals[..., :1].shape, last_sample_z)  # ← ĐÃ SỬA
   ], -1)
   dists = dists * jnp.linalg.norm(dirs[..., None, :], axis=-1)
   alpha = 1.0 - jnp.exp(-sigma * dists)

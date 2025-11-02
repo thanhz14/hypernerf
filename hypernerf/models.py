@@ -169,7 +169,12 @@ class NerfModel(nn.Module):
 
   @property
   def num_warp_embeds(self):
-    return max(self.embeddings_dict[self.warp_embed_key]) + 1
+      if self.warp_embed_key not in self.embeddings_dict:
+          return 1  # Default to 1 embedding
+      embeds = self.embeddings_dict[self.warp_embed_key]
+      if len(embeds) == 0:
+          return 1  # Default to 1 embedding
+      return max(embeds) + 1
 
   @property
   def num_hyper_embeds(self):
