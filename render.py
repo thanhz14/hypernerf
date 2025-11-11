@@ -132,6 +132,16 @@ for i, camera in enumerate(test_cameras):
     # --- Visualize ---
     depth_viz = viz.colorize(depth, cmin=datasource.near, cmax=datasource.far, invert=True)
     mediapy.show_images([rgb, depth_viz], titles=['RGB', 'Depth'])
+     # ==== Lưu ảnh ====
+    import imageio
+    import os
+
+    output_dir = "outputs/frames"
+    os.makedirs(output_dir, exist_ok=True)
+
+    imageio.imwrite(os.path.join(output_dir, f"frame_{i:03d}.png"), image_utils.image_to_uint8(rgb))
+    imageio.imwrite(os.path.join(output_dir, f"depth_{i:03d}.png"), image_utils.image_to_uint8(depth_viz))
+    print(f"✅ Saved {os.path.join(output_dir, f'frame_{i:03d}.png')} and depth_{i:03d}.png")
 
 # ----- SAVE VIDEO -----
 fps = 30
