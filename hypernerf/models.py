@@ -167,15 +167,22 @@ class NerfModel(nn.Module):
   def num_nerf_embeds(self):
     return max(self.embeddings_dict[self.nerf_embed_key]) + 1
 
+  
+  # def num_warp_embeds(self):
+  #     if self.warp_embed_key not in self.embeddings_dict:
+  #         return 1  # Default to 1 embedding
+  #     embeds = self.embeddings_dict[self.warp_embed_key]
+  #     if len(embeds) == 0:
+  #         return 1  # Default to 1 embedding
+  #     return max(embeds) + 1
   @property
   def num_warp_embeds(self):
-      if self.warp_embed_key not in self.embeddings_dict:
-          return 1  # Default to 1 embedding
-      embeds = self.embeddings_dict[self.warp_embed_key]
-      if len(embeds) == 0:
-          return 1  # Default to 1 embedding
-      return max(embeds) + 1
-
+    embeds = self.embeddings_dict[self.warp_embed_key]
+    if isinstance(embeds, dict):  # <- thêm dòng này!
+        embeds = embeds.values()
+    if len(embeds) == 0:
+        return 1  # Default to 1 embedding
+    return max(embeds) + 1
   @property
   def num_hyper_embeds(self):
     return max(self.embeddings_dict[self.hyper_embed_key]) + 1
@@ -432,7 +439,7 @@ class NerfModel(nn.Module):
     return hyper_points
 
   def map_points(self, points, warp_embed, hyper_embed, extra_params,
-                 use_warp=True, return_warp_jacobian=False,
+                 use_warp=False, return_warp_jacobian=False,
                  hyper_point_override=None):
     """Map input points to warped spatial and hyper points.
 
