@@ -477,7 +477,7 @@ class NerfModel(nn.Module):
                      viewdirs,
                      metadata,
                      extra_params,
-                     use_warp=True,
+                     use_warp=False,
                      metadata_encoded=False,
                      return_warp_jacobian=False,
                      use_sample_at_infinity=False,
@@ -492,6 +492,10 @@ class NerfModel(nn.Module):
       else:
         warp_embed = metadata[self.warp_embed_key]
         warp_embed = self.warp_embed(warp_embed)
+        # Debug: Check warp embedding shape
+        print(f"DEBUG: warp_embed input shape = {warp_embed.shape}")
+        # print(f"DEBUG: self.warp_embed.features = {self.warp_embed.features}")
+
     else:
       warp_embed = None
 
