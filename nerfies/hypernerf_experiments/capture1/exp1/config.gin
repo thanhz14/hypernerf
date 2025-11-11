@@ -1,0 +1,70 @@
+
+DELAYED_HYPER_ALPHA_SCHED = {
+  'type': 'piecewise',
+  'schedules': [
+    (1000, ('constant', 0.0)),
+    (0, ('linear', 0.0, %hyper_point_max_deg, 10000))
+  ],
+}
+
+ExperimentConfig.image_scale = 8
+ExperimentConfig.datasource_cls = @NerfiesDataSource
+NerfiesDataSource.data_dir = 'D:/Acer/Code/Dat_pr/HYPERNERF/nerfies/captures/capture1'
+NerfiesDataSource.image_scale = 8
+
+NerfModel.use_viewdirs = 1
+NerfModel.use_rgb_condition = 1
+NerfModel.num_coarse_samples = 64
+NerfModel.num_fine_samples = 64
+
+NerfModel.use_viewdirs = True
+NerfModel.use_stratified_sampling = True
+NerfModel.use_posenc_identity = False
+NerfModel.nerf_trunk_width = 128
+NerfModel.nerf_trunk_depth = 8
+
+TrainConfig.max_steps = 100000
+TrainConfig.batch_size = 4096
+TrainConfig.print_every = 100
+TrainConfig.use_elastic_loss = False
+TrainConfig.use_background_loss = False
+
+# Warp configs.
+warp_min_deg = 0
+warp_max_deg = 6
+NerfModel.use_warp = True
+SE3Field.min_deg = %warp_min_deg
+SE3Field.max_deg = %warp_max_deg
+SE3Field.use_posenc_identity = False
+NerfModel.warp_field_cls = @SE3Field
+
+TrainConfig.warp_alpha_schedule = {
+    'type': 'linear',
+    'initial_value': 0,
+    'final_value': 6,
+    'num_steps': 80000,
+}
+
+# Hyper configs.
+hyper_num_dims = 8
+hyper_point_min_deg = 0
+hyper_point_max_deg = 1
+
+NerfModel.hyper_embed_cls = @hyper/GLOEmbed
+hyper/GLOEmbed.num_dims = %hyper_num_dims
+NerfModel.hyper_point_min_deg = %hyper_point_min_deg
+NerfModel.hyper_point_max_deg = %hyper_point_max_deg
+
+TrainConfig.hyper_alpha_schedule = %DELAYED_HYPER_ALPHA_SCHED
+
+hyper_sheet_min_deg = 0
+hyper_sheet_max_deg = 6
+HyperSheetMLP.min_deg = %hyper_sheet_min_deg
+HyperSheetMLP.max_deg = %hyper_sheet_max_deg
+HyperSheetMLP.output_channels = %hyper_num_dims
+
+NerfModel.hyper_slice_method = 'bendy_sheet'
+NerfModel.hyper_sheet_mlp_cls = @HyperSheetMLP
+NerfModel.hyper_use_warp_embed = True
+
+TrainConfig.hyper_sheet_alpha_schedule = ('constant', %hyper_sheet_max_deg)
